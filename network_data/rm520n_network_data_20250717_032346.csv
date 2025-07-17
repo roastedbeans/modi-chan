@@ -1,4 +1,0 @@
-timestamp,rrc_state,cell_type,technology,mcc,mnc,cell_id,pci,tac_lac,earfcn_arfcn,band,bandwidth,scs,rsrp,rsrq,rssi,sinr,cqi,tx_power,cs_state,cs_lac,cs_ci,ps_state,ps_lac,ps_ci,eps_state,eps_tac,eps_ci,nr5g_state,nr5g_tac,nr5g_ci,sim_state,operator,operator_mcc_mnc,attach_state,neighbor_count,best_neighbor_rsrp,neighbor_cells_json,csq_rssi,csq_ber,serving_cell_count,ca_info
-2025-07-17 03:23:48.393,,,,,,,,,,,,,,,,,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,READY,,,DETACHED,0,,,99,99,0,
-2025-07-17 03:23:55.418,,,,,,,,,,,,,,,,,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,READY,,,DETACHED,0,,,99,99,0,
-2025-07-17 03:24:02.446,,,,,,,,,,,,,,,,,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,NOT_REGISTERED,,,READY,,,DETACHED,0,,,99,99,0,
