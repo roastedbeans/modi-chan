@@ -86,6 +86,17 @@ class NetworkData:
     csq_ber: str = ""
     serving_cell_count: int = 0
     ca_info: str = ""  # Carrier aggregation info
+    
+    # Diagnostic Metrics (via AT commands)
+    modem_temp: str = ""  # Modem temperature
+    pa_temp: str = ""  # Power amplifier temperature
+    sim_temp: str = ""  # SIM card temperature
+    board_temp: str = ""  # Board temperature
+    rf_temperature: str = ""  # RF module temperature
+    power_mode: str = ""  # Current power mode
+    power_saving: str = ""  # Power saving state
+    battery_voltage: str = ""  # Battery voltage
+    power_consumption: str = ""  # Current power consumption
 
 class ATCommandInterface:
     """Handles AT command communication with the modem"""
@@ -195,6 +206,9 @@ class NetworkDataExtractor:
         
         # Extract additional signal metrics
         self._extract_signal_metrics(data)
+        
+        # Extract diagnostic information via AT commands
+        self._extract_diagnostic_info(data)
         
         return data
     
@@ -477,6 +491,62 @@ class NetworkDataExtractor:
                 ca_info.append(line.split(':', 1)[1].strip())
         data.ca_info = '; '.join(ca_info) if ca_info else ""
 
+    def _extract_diagnostic_info(self, data: NetworkData):
+        """Extract diagnostic information using AT commands"""
+        # Get temperature information
+        lines = self.at.send_command("AT+QTEMP")
+        for line in lines:
+            if line.startswith('+QTEMP:'):
+                parts = line.split(',')
+                try:
+                    if len(parts) >= 2:
+                        sensor_name = parts[0].split(':')[1].strip().strip('"')
+                        temp_value = parts[1].strip().strip('"')
+                        
+                        # Map sensor names to data fields
+                        if 'mdm' in sensor_name.lower() or 'modem' in sensor_name.lower():
+                            data.modem_temp = temp_value
+                        elif 'pa' in sensor_name.lower():
+                            data.pa_temp = temp_value
+                        elif 'sim' in sensor_name.lower():
+                            data.sim_temp = temp_value
+                        elif 'board' in sensor_name.lower() or 'case' in sensor_name.lower():
+                            data.board_temp = temp_value
+                        elif 'rf' in sensor_name.lower():
+                            data.rf_temperature = temp_value
+                        elif 'x0' in sensor_name.lower() or 'xo' in sensor_name.lower():
+                            # Use first available temperature for general modem temp if not set
+                            if not data.modem_temp:
+                                data.modem_temp = temp_value
+                except (IndexError, ValueError) as e:
+                    logger.warning(f"Error parsing temperature data: {e}")
+        
+        # Get power configuration information
+        lines = self.at.send_command("AT+QCFG=\"psm\"")
+        for line in lines:
+            if line.startswith('+QCFG:') and 'psm' in line:
+                parts = line.split(',')
+                try:
+                    if len(parts) >= 2:
+                        data.power_mode = parts[1].strip().strip('"')
+                        data.power_saving = parts[1].strip().strip('"')
+                except (IndexError, ValueError) as e:
+                    logger.warning(f"Error parsing power mode: {e}")
+        
+        # Get voltage information if available
+        lines = self.at.send_command("AT+CBC")
+        for line in lines:
+            if line.startswith('+CBC:'):
+                parts = line.split(',')
+                try:
+                    if len(parts) >= 3:
+                        data.battery_voltage = parts[2].strip().strip('"')
+                except (IndexError, ValueError) as e:
+                    logger.warning(f"Error parsing battery voltage: {e}")
+        
+        # Additional RF power information from serving cell data
+        # This is already captured in _extract_serving_cell via tx_power field
+
 class DataLogger:
     """Handles CSV logging of network data"""
     
@@ -562,11 +632,12 @@ class NetworkMonitor:
         # Initialize logger
         self.logger.initialize()
         
-        # Enable URCs for real-time updates (optional)
+        # Enable URCs for real-time updates
         self._configure_modem()
         
         self.running = True
         logger.info(f"Starting network monitoring (interval: {self.interval}s)")
+        logger.info(f"Using AT port: {self.port}")
         
         try:
             while self.running:
@@ -640,6 +711,11 @@ class NetworkMonitor:
         # Neighbors
         print(f"\nNeighbor Cells: {data.neighbor_count} | Best RSRP: {data.best_neighbor_rsrp}")
         
+        # Diagnostic Information (via AT commands)
+        print(f"\nDiagnostic Information:")
+        print(f"  Temperature: {data.modem_temp}°C | Power: {data.tx_power} dBm")
+        print(f"  CSQ: {data.csq_rssi} | BER: {data.csq_ber}")
+        
         print("="*80)
 
 def main():
@@ -649,7 +725,7 @@ def main():
     )
     parser.add_argument(
         "port", 
-        help="Serial port (e.g., COM3, /dev/ttyUSB2)"
+        help="AT command port (e.g., COM3, /dev/ttyUSB2)"
     )
     parser.add_argument(
         "-b", "--baudrate", 

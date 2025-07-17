@@ -1,136 +1,168 @@
-# Quectel RM520N-GL Network Monitor
+# Quectel RM520N-GL Network Data Extractor
 
-A Python application for monitoring RRC, NAS, and signal strength information from the Quectel RM520N-GL 5G module.
+A Python-based network data extraction tool for Quectel RM520N-GL 5G module, designed for ML-based Intrusion Detection Systems (IDS). Collects comprehensive network metrics including RRC states, NAS layer data, signal metrics, and diagnostic information via AT commands.
 
 ## Features
 
-- **Real-time monitoring** of network parameters
-- **RRC (Radio Resource Control)** information from serving and neighbor cells
-- **NAS (Non-Access Stratum)** registration status for CS, EPS, and 5GS
-- **Signal strength metrics** including RSRP, RSRQ, SINR, and CSQ
-- **Multi-technology support** for 5G NR (SA/NSA), LTE, and WCDMA
-- **Tabular display** with automatic screen refresh
-- **Flexible update intervals**
+- Real-time monitoring of cellular network parameters
+- Comprehensive data collection via AT commands:
+  - RRC (Radio Resource Control) states
+  - NAS (Non-Access Stratum) registration status
+  - Signal metrics (RSRP, RSRQ, SINR, etc.)
+  - Cell information (serving and neighbor cells)
+  - Authentication and security states
+  - Diagnostic metrics (temperature, power status)
+- Multi-RAT support (5G NR SA/NSA, LTE, WCDMA)
+- CSV logging with timestamps
+- Configurable monitoring intervals
+- Detailed console output
+- Single port operation for simplicity
 
 ## Installation
 
-1. Install Python 3.6 or higher
-2. Install required packages:
+1. Clone the repository:
+```bash
+git clone [repository-url]
+cd modi-extractor
+```
+
+2. Create and activate virtual environment:
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# Linux/MacOS
+python3 -m venv venv
+source venv/bin/activate
+```
+
+3. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
+
+## Finding Your COM Port
+
+### Windows
+1. Open Device Manager (Win + X → Device Manager)
+2. Look under "Ports (COM & LPT)"
+3. Find "Quectel USB AT Port (COMx)" - note the COM number
+
+### Linux
+```bash
+# List all serial ports
+ls /dev/tty*
+
+# Find Quectel ports specifically
+ls -l /dev/tty* | grep -i "Quectel"
+
+# Detailed USB device info
+lsusb | grep -i "Quectel"
+dmesg | grep -i "Quectel"
+
+# Monitor device connections
+sudo dmesg -w
+```
+
+### macOS
+```bash
+# List all serial ports
+ls /dev/cu.* | grep -i "Quectel"
+ls /dev/tty.* | grep -i "Quectel"
+```
+
+Note: The Quectel RM520N-GL module typically appears as "Quectel USB AT Port". This single port provides access to all network and diagnostic information via AT commands.
 
 ## Usage
 
 ### Basic Usage
 ```bash
-python rm520n_monitor.py COM3
+python modi.py COM3  # Windows
+
+python modi.py /dev/ttyUSB0  # Linux ($ls /dev/ttyUSB* - AT Port usually at ttyUSB0 or ttyUSB1)
 ```
 
 ### Advanced Options
 ```bash
-# Specify baud rate
-python rm520n_monitor.py /dev/ttyUSB0 -b 115200
+# Custom baud rate
+python modi.py COM3 -b 115200
 
-# Set update interval to 10 seconds
-python rm520n_monitor.py COM3 -i 10
+# Custom update interval (seconds)
+python modi.py COM3 -i 10
 
-# Run once and exit (no continuous monitoring)
-python rm520n_monitor.py COM3 --once
+# Custom output directory
+python modi.py COM3 -o /path/to/output
+
+# Enable verbose logging
+python modi.py COM3 -v
 ```
 
-### Command Line Arguments
+## Data Collection
 
-- `port`: Serial port (e.g., `COM3` on Windows, `/dev/ttyUSB0` on Linux)
-- `-b, --baudrate`: Baud rate (default: 115200)
-- `-i, --interval`: Update interval in seconds (default: 5)
-- `-o, --once`: Run once and exit
+### Network Parameters
+- RRC state and connection type
+- Cell identity (MCC, MNC, Cell ID, PCI)
+- Radio parameters (EARFCN/ARFCN, Band, Bandwidth)
+- Signal metrics (RSRP, RSRQ, RSSI, SINR, CQI)
+- NAS registration states (CS, PS, EPS, 5G)
+- Authentication/Security info
+- Neighbor cell information
 
-## Supported AT Commands
+### Diagnostic Parameters
+- Temperature sensors (modem, PA, SIM, board, RF)
+- Power management status
+- Battery voltage information
+- Signal quality metrics
 
-The application uses the following AT commands:
-
-### Network Information
-- `AT+QENG="servingcell"` - Primary serving cell information
-- `AT+QENG="neighbourcell"` - Neighbor cell information
-
-### Signal Measurements  
-- `AT+QRSRP` - Reference Signal Received Power
-- `AT+QRSRQ` - Reference Signal Received Quality
-- `AT+QSINR` - Signal to Interference plus Noise Ratio
-- `AT+CSQ` - Signal quality report
-
-### NAS Registration Status
-- `AT+CREG?` - Circuit Switched registration
-- `AT+CEREG?` - EPS network registration  
-- `AT+C5GREG?` - 5GS network registration
-
-## Data Display
-
-### NAS Information
-- CS Registration status
-- EPS Registration status  
-- 5GS Registration status
-- Last update timestamp
-
-### Serving Cells
-- Technology (5G NR SA/NSA, LTE, WCDMA)
-- Connection state
-- Network identifier (MCC-MNC)
-- Cell ID and Physical Cell ID
-- Frequency information (EARFCN/ARFCN)
-- Band information
-- Signal measurements (RSRP, RSRQ, RSSI, SINR)
-
-### Neighbor Cells
-- Available neighbor cells
-- Signal strength comparison
-- Cell reselection parameters
-
-### Signal Metrics
-- Detailed signal measurements
-- Multi-path signal information
-- Channel quality indicators
+### Output Format
+- CSV files with timestamps
+- Real-time console display
+- Comprehensive logging
 
 ## Hardware Setup
 
-1. Connect the RM520N-GL module via USB
-2. Install appropriate drivers for your operating system
-3. Identify the AT command port (usually appears as a serial port)
-4. Ensure the module has a valid SIM card and network coverage
+1. Connect RM520N-GL module via USB
+2. Install appropriate USB-to-Serial drivers
+3. Identify the AT port in device manager
+4. Ensure proper SIM card installation and network coverage
 
 ## Troubleshooting
 
-### Connection Issues
-- Verify the correct serial port name
-- Check that no other applications are using the port
-- Ensure proper drivers are installed
-- Try different baud rates if communication fails
+### Common Issues
+- **Port Access Error**: Verify port name and permissions
+- **No Response**: Check physical connections and drivers
+- **Data Errors**: Verify SIM card and network coverage
+- **CSV Write Error**: Check output directory permissions
 
-### No Data Display
-- Check SIM card installation
-- Verify network coverage in your area
-- Ensure the module is properly powered
-- Try different network preferences (2G/3G/4G/5G)
+### Port Names
+- Windows: `COM1`, `COM2`, etc.
+- Linux: `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.
+- MacOS: `/dev/cu.usbserial-*`
 
-### Common Port Names
-- **Windows**: `COM1`, `COM3`, `COM4`, etc.
-- **Linux**: `/dev/ttyUSB0`, `/dev/ttyACM0`, etc.
-- **macOS**: `/dev/cu.usbserial-*` or `/dev/tty.usbserial-*`
+## Signal Quality Reference
 
-## Technical Notes
+- RSRP (Reference Signal Received Power)
+  - Excellent: > -80 dBm
+  - Good: -80 to -90 dBm
+  - Fair: -90 to -100 dBm
+  - Poor: < -100 dBm
 
-### Supported Technologies
-- **5G NR Standalone (SA)**: Full 5G network
-- **5G NR Non-Standalone (NSA)**: 5G with LTE anchor
-- **LTE**: 4G networks including LTE-A
-- **WCDMA**: 3G networks
+- SINR (Signal to Interference plus Noise Ratio)
+  - Excellent: > 20 dB
+  - Good: 13 to 20 dB
+  - Fair: 0 to 13 dB
+  - Poor: < 0 dB
 
-### Signal Measurement Ranges
-- **RSRP**: -140 to -44 dBm (higher is better)
-- **RSRQ**: -20 to -3 dB (higher is better)  
-- **SINR**: -20 to 30 dB (higher is better)
-- **CSQ**: 0-31 scale (higher is better)
+## AT Commands Used
+
+The tool uses standard AT commands for comprehensive data collection:
+- `AT+QENG="servingcell"` - Network and signal information
+- `AT+QENG="neighbourcell"` - Neighbor cell data  
+- `AT+QTEMP` - Temperature monitoring
+- `AT+CREG?`, `AT+CEREG?`, `AT+C5GREG?` - Registration states
+- `AT+CPIN?`, `AT+COPS?` - Authentication info
+- `AT+CSQ`, `AT+QCAINFO` - Signal quality and carrier aggregation
 
 ## License
 
